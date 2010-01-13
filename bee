@@ -1,0 +1,352 @@
+#!/bin/bash
+#<?php echo chr(8); ob_start(); ?>
+
+# http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-in/179231#179231
+# removed $BASH_SOURCE for sh compatibility
+SCRIPT_PATH=$0
+if([ -h "${SCRIPT_PATH}" ]) then
+  while([ -h "${SCRIPT_PATH}" ]) do SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; done
+fi
+_DIR=`pwd`
+cd `dirname ${SCRIPT_PATH}` > /dev/null
+SCRIPT_PATH=`pwd`;
+cd $_DIR > /dev/null
+
+if ! which bee >/dev/null; then
+  #informative message about installing bee manually
+  popd > /dev/null
+  echo ""                                                                                    >&2
+  echo "***** BEE IS NOT INSTALLED *****"                                                    >&2
+  echo ""                                                                                    >&2
+  echo "To use bee from anywhere, create a symlink to bee in a directory on your path e.g.:" >&2
+  echo ""                                                                                    >&2
+  echo "  $ sudo ln -s ${SCRIPT_PATH}/bee /usr/bin/bee"                                      >&2
+  echo ""                                                                                    >&2
+  echo "You can enable bash completion by sourcing the completion script in your ~/.bashrc " >&2
+  echo "or similar e.g.:"                                                                    >&2
+  echo ""                                                                                    >&2
+  echo "  $ echo \". ${SCRIPT_PATH}/bash_completion\"  >> ~/.bashrc"                         >&2
+  echo ""                                                                                    >&2
+  echo "Press a key to continue"                                                             >&2
+  read -n1 -s
+fi;
+
+# include local config
+if [ -f `pwd`/.bee ]; then . `pwd`/.bee; fi
+
+# run php script
+php $SCRIPT_PATH/bee "$@"
+exit
+
+<?php ob_end_clean();
+
+// micro task framework
+
+error_reporting(E_ALL & ~E_NOTICE); //suppress notices?
+
+abstract class Bee {
+
+  const LOG_PREFIX = ' -- ';
+
+  // These should be read from config/properties in the future
+  const LOG_LEVEL      = 'NORMAL'; // <-- Set this to NONE or NORMAL
+  const LOG_COLOUR     = 'PURPLE'; // <-- Set this to any value in the array
+  const LOG_HIGHLIGHT = TRUE; // <-- No colour is applied if this is false
+
+  protected $TERM_COLOURS = array(
+    'DARK_GRAY'   => "[1;30m",
+    'LIGHT_RED'   => "[1;31m",
+    'LIGHT_GREEN' => "[1;32m",
+    'YELLOW'      => "[1;33m",
+    'LIGHT_BLUE'  => "[1;34m",
+    'MAGENTA'     => "[1;35m",
+    'LIGHT_CYAN'  => "[1;36m",
+    'WHITE'       => "[1;37m",
+    'NORMAL'      => "[0m",
+    'BLACK'       => "[0;30m",
+    'RED'         => "[0;31m",
+    'GREEN'       => "[0;32m",
+    'BROWN'       => "[0;33m",
+    'BLUE'        => "[0;34m",
+    'PURPLE'      => "[0;35m",
+    'CYAN'        => "[0;36m",
+    'LIGHT_GRAY'  => "[0;37m",
+    'BOLD'        => "[1m",
+    'UNDERSCORE'  => "[4m",
+    'REVERSE'     => "[7m"
+  );
+
+  private static $log_handle = STDERR; //TODO: support different logging backends
+
+  // This is for printing standard output
+  // PHP would not let me name this print :(
+  protected function bee_print($msg){
+    $this->bee_echo($msg);
+  }
+
+  // This is for printing standard output
+  protected function bee_echo($msg){
+    if(is_array($msg)) $msg = implode(PHP_EOL, $msg);
+    echo $msg . PHP_EOL; // echo $this->_terminal_colour($msg . PHP_EOL, 'NORMAL'); // <-- although good practice, this breaks the autocomplete
+  }
+
+  // Logging admin messages
+  protected function log($msg){
+    if(strtoupper(self::LOG_LEVEL) == 'NONE') return;
+    if(is_array($msg))$msg = implode(PHP_EOL.self::LOG_PREFIX, $msg);
+    $msg = self::LOG_PREFIX . $msg . PHP_EOL;
+    fwrite(self::$log_handle, $this->_terminal_colour($msg, self::LOG_COLOUR));
+  }
+
+  // Colour me timbers!
+  private function _terminal_colour($text, $colour='NORMAL'){
+    $colour = $this->TERM_COLOURS[strtoupper($colour)];
+    if(!self::LOG_HIGHLIGHT || !$colour || isset($_SERVER['WINDIR'])) return $text;
+    return chr(27) . $colour . $text . chr(27) . chr(27) . '[0m' . chr(27) . ' ';
+  }
+
+}
+
+class BeeTaskSet extends Bee {
+
+  var $config;
+  function __construct($config = null) {
+    $this->config =& $config;
+  }
+
+  function list_task() {
+    if(get_parent_class($this) == 'Bee') return $this->_list_all_tasks();
+    $this->task_set_name = strtolower(preg_replace('/TaskSet$/', '', get_class($this)));
+    $task_method_names = array_diff(get_class_methods($this), array('list_task'));
+    $task_names = array_filter(array_map(array($this, 'task_name'), $task_method_names));
+    $this->bee_echo($task_names);
+  }
+
+  function depends_on() {
+    static $satisfied = array();
+    static $start_time, $current, $stack;
+    static $cwd;
+    if(is_null($cwd)) $cwd = $_SERVER['PWD'];
+    if(is_null($start_time)) $start_time = mktime();
+    if(is_null($this->config)) $this->config = new BeeConfig;
+    $dependencies = func_get_args();
+    if(count($dependencies) == 1) {
+      $dependencies = array_filter(array_map('trim', explode(' ', $dependencies[0])));
+    }
+    $dependencies = array_diff($dependencies, $satisfied);
+    if($current && $dependencies) {
+      $this->log("{$current} depends on " . implode(', ', $dependencies));
+    }
+    foreach($dependencies as $dependency) {
+      if(!in_array($dependency, $satisfied)) {
+        if($current) $stack[] = $current;
+        $current = $dependency;
+        $task = $this->_load_task($current, $config);
+        $around_advice = array($task[0], 'around');
+        $prev_dir = getcwd();
+        $this->chdir($cwd);
+        if(is_callable($around_advice)) {
+          call_user_func($around_advice, $task[1]);
+        } else {
+          call_user_func($task);
+        }
+        $this->chdir($prev_dir);
+        $satisfied[] = $current;
+        $this->log("{$current} done in " . date("i:s", mktime() - $start_time));
+        if($stack) $current = array_pop($stack);
+      }
+    }
+  }
+
+  /**
+  * returns callback
+  * halts if the task can't be loaded.
+  */
+  private function _load_task($taskname) {
+    static $taskset_objects;
+    list($task_class, $task_method) = explode(':', $taskname);
+    if(!($task_method)) $task_method = 'default';
+    if(file_exists($task_class)) {
+      require_once($task_class);
+    } else {
+      require_once($task_class . '.php');
+    }
+    $task_class .= 'TaskSet';
+    if(class_exists($task_class)) {
+      if(!isset($taskset_objects[$task_class])) {
+        $taskset_objects[$task_class] = new $task_class($this->config);
+        $taskset_objects[$task_class]->depends_on($taskset_objects[$task_class]->depends_on);
+      }
+      $task_object = $taskset_objects[$task_class];
+      $task_method = str_replace('-', '_', "{$task_method}_task");
+      $task = array($task_object, $task_method);
+      if(is_callable($task)) return $task;
+    }
+    trigger_error("Task not defined: {$taskname}", E_USER_ERROR);
+  }
+
+  private function _list_all_tasks() {
+    foreach(_bee_task_paths() as $path) {
+      foreach(glob("{$path}/*.php") as $file) include_once $file;
+    }
+    foreach(get_declared_classes() as $class_name) {
+      if($class_name == get_class($this)) continue;
+      if(get_parent_class($class_name) == get_class($this)) {
+        $class = new $class_name;
+        $this->bee_echo(self::LOG_PREFIX); // $this->log('');
+        $class->list_task();
+      }
+    }
+  }
+
+  private function task_name($method_name) {
+    if(strpos($method_name, '_') === 0) return;
+    if(!preg_match('/_task$/', $method_name)) return;
+    $task_name = preg_replace('/_task$/', '', $method_name);
+    $task_name = str_replace('_', '-', $task_name);
+    // get task comment
+    $rm = new ReflectionMethod(get_class($this), $method_name);
+    $src = file_get_contents($rm->getFileName());
+    $matches = array();
+    $task_comment = preg_match(sprintf('/[\/\*]+(.*?)[\*\/]*[\s]*function[\s]+%s/m', $method_name), $src, $matches) ?
+      $matches[1] : '';
+    return str_pad("{$this->task_set_name}:{$task_name} ", 29) . $task_comment;
+  }
+
+  protected function sh($cmd) {
+    $args = func_get_args();
+    $cmd = call_user_func_array('sprintf', $args);
+    $this->log("\$ $cmd"); // echo " \$ {$cmd}\r\n";
+    passthru($cmd, $ret);
+    if($ret) exit($ret);
+  }
+
+  protected function chdir($path) {
+    if(isset($_SERVER['TERM']) && $_SERVER['TERM'] == 'cygwin') {
+      $path = trim(`cygpath -m "{$path}"`);
+    }
+    chdir($path);
+  }
+
+  /**
+   * fill in {{{placeholders}}} in a template with values from BeeConfig object
+   * $template string filename or raw template
+   * $vars BeeConfig contaqins values to be substituted into template
+   */
+  protected function generate($template, $vars) {
+    if(file_exists($template)) $template = file_get_contents($template);
+    return preg_replace('/{{{(.*)}}}/e', '$vars["\\1"]', $template);
+  }
+
+}
+
+/**
+ * loads java.properties and exposes them as an array-like object
+ * e.g.
+ * $cfg->load('default.properties')
+ * $cfg['db.user'] = 'drupal' // short for $cfg['db']['user'] = 'drupal'
+ */
+class BeeConfig implements ArrayAccess, Countable {
+
+  private $_properties = array();
+  static $loading_instance;
+
+  /** string implentation **/
+  function __toString($root = null) {
+    ksort($this->_properties);
+    foreach($this->_properties as $key => $val) {
+      $out .= is_object($val) ? $val->__toString("{$root}{$key}.") : "{$root}{$key} = {$val}\r\n";
+    }
+    return (string)$out;
+  }
+
+  /** arrayaccess implementation **/
+  function offsetExists($key) {
+    list($base_key, $key) = explode('.', $key, 2);
+    if(!isset($this->_properties[$base_key])) return false;
+    if(!strlen($key)) return true;
+    return isset($this->_properties[$base_key][$key]);
+  }
+  function offsetGet($key) { return $this->_get($key); }
+  function offsetSet($key, $val) { return $this->_set($key, $val); }
+  function offsetUnset($key) { unset($this->_properties[$key]); }
+
+  /** countable implementation **/
+  function count() { return count($this->_properties); }
+
+  function load($properties, $prefix = null) {
+    self::$loading_instance = $this;
+    if($prefix) {
+      if(!(isset($this->_properties[$prefix]) && is_object($this->_properties[$prefix]))) {
+        $this->_properties[$prefix] = new BeeConfig;
+      }
+      return $this->_properties[$prefix]->load($properties);
+    }
+    ob_start();
+    if(@include $properties) $properties = ob_get_contents();
+    ob_end_clean();
+    return $this->_from_string($properties);
+  }
+
+  function set_if_empty($property, $value) {
+    if (!isset($this[$property])) $this[$property] = $value;
+    return $this[$property];
+  }
+
+  private function _from_string($str) {
+    $str = str_replace("\r", "\n", $str);
+    $lines = array_filter(array_map('trim', explode("\n", $str)));
+    foreach($lines as $line) {
+      if($line{0} == '#') continue;
+      list($key, $val) = array_map('trim', explode('=', $line));
+      $this->_set($key, $val);
+    }
+  }
+
+  private function _set($key, $val) {
+    list($key, $sub_key) = @explode('.', $key, 2);    //suppress undefined offset notice
+    if($sub_key) {
+      if(!isset($this->_properties[$key])) $this->_properties[$key] = new BeeConfig;
+      $this->_properties[$key][$sub_key] = $val;
+    } else {
+      // interpolate substitutions in properties
+      $config = self::$loading_instance;
+      $val = preg_replace('/\$\{([^\}]*)\}/e', '$config["\\1"]', $val);
+      eval("\$this->_properties[\$key] = \"$val\";");
+    }
+  }
+
+
+  private function _get($key) {
+    list($key, $sub_key) = @explode('.', $key, 2);  //suppress undefined offset notice
+    if(!isset($this->_properties[$key])) return;
+    if($sub_key) {
+      return $this->_properties[$key][$sub_key];
+    } else {
+      return $this->_properties[$key];
+    }
+  }
+}
+
+function _bee_task_paths() {
+  $env_paths = array_map('realpath', array_map('trim', explode(PATH_SEPARATOR, $_ENV['BEE_TASKPATH'])));
+  $default_paths = array_map('realpath',
+    array('.', './tasks', '~/.bee', '/etc/bee/tasks'));
+  return array_filter(array_merge($env_paths, $default_paths));
+}
+
+ini_set('memory_limit', -1); //some PHPs don't like this
+set_time_limit(0);
+ini_set('max_execution_time', 0);
+ini_set('max_input_time', 0);
+$_SERVER['REMOTE_ADDR'] = '';
+
+$paths = explode(PATH_SEPARATOR, get_include_path());
+set_include_path(implode(PATH_SEPARATOR,
+  array_merge(_bee_task_paths(), $paths)));
+
+$args = $argv;
+array_shift($args);
+if(!$args) $args = 'bee:list';
+$taskset = new BeeTaskSet;
+call_user_func_array(array($taskset, 'depends_on'), $args);
