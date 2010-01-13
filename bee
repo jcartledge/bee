@@ -141,7 +141,7 @@ class BeeTaskSet extends Bee {
       if(!in_array($dependency, $satisfied)) {
         if($current) $stack[] = $current;
         $current = $dependency;
-        $task = $this->_load_task($current, $config);
+        $task = $this->_load_task($current);
         $around_advice = array($task[0], 'around');
         $prev_dir = getcwd();
         $this->chdir($cwd);
@@ -162,27 +162,23 @@ class BeeTaskSet extends Bee {
   * returns callback
   * halts if the task can't be loaded.
   */
-  private function _load_task($taskname) {
+  private function _load_task($full_taskname) {
     static $taskset_objects;
-    list($task_class, $task_method) = explode(':', $taskname);
-    if(!($task_method)) $task_method = 'default';
-    if(file_exists($task_class)) {
-      require_once($task_class);
-    } else {
-      require_once($task_class . '.php');
-    }
-    $task_class .= 'TaskSet';
+    list($taskset_name, $task_name) = explode(':', $full_taskname);
+    if(!($task_name)) $task_name = 'default';
+    $task_class = $taskset_name . 'TaskSet';
+    $task_method = str_replace('-', '_', "{$task_name}_task");
+    if(!class_exists($task_class)) require_once($taskset_name . '.php');
     if(class_exists($task_class)) {
       if(!isset($taskset_objects[$task_class])) {
         $taskset_objects[$task_class] = new $task_class($this->config);
         $taskset_objects[$task_class]->depends_on($taskset_objects[$task_class]->depends_on);
       }
       $task_object = $taskset_objects[$task_class];
-      $task_method = str_replace('-', '_', "{$task_method}_task");
       $task = array($task_object, $task_method);
       if(is_callable($task)) return $task;
     }
-    trigger_error("Task not defined: {$taskname}", E_USER_ERROR);
+    trigger_error("Task not defined: {$full_taskname}", E_USER_ERROR);
   }
 
   private function _list_all_tasks() {
@@ -311,7 +307,7 @@ class BeeConfig implements ArrayAccess, Countable {
     } else {
       // interpolate substitutions in properties
       $config = self::$loading_instance;
-      $val = preg_replace('/\$\{([^\}]*)\}/e', '$config["\\1"]', $val);
+      $val = addslashes(preg_replace('/\$\{([^\}]*)\}/e', '$config["\\1"]', $val));
       eval("\$this->_properties[\$key] = \"$val\";");
     }
   }
