@@ -5,6 +5,8 @@ I wrote it because we were using Ant in a PHP project and it just felt way too h
 
 It probably lacks several important features of whatever you're using now, but it works OK for us.
 
+That said, bee is very immature and will probably leave grubby handprints and texta drawings all over your clean white walls.
+
 ## INSTALL:
 
  - From github
@@ -66,10 +68,11 @@ This can be done anywhere in the task method but generally you'll want to ensure
 
 Bee looks in several places for tasksets. As tasksets are loaded using PHPs require function, this is determined by looking on the PHP include path.  
 Before looking, bee prepends the following locations to the include path:  
- - .        (the current directory)
- - ./tasks
- - ~/.bee
- - /etc/bee/tasks
+
+- .        (the current directory)  
+- ./tasks  
+- ~/.bee  
+- /etc/bee/tasks  
 
 In addition, if the environment variable BEE_TASKPATH is set, bee will look there first.  
 Taskset files must be named according to the taskset they define - e.g. BuildTaskSet given above should be in build.php
@@ -87,5 +90,4 @@ Bee defines a list task which is available from all user defined tasksets. For e
 
 Note the comments preceding task methods are shown as descriptions.  
 
-list is the default task for bee so calling bee with no task specified will list all available user-defined tasksets and tasks. This is exploited by the bash_completion script to provide TAB completion of taskset and task names.
-
+list is the default task for bee so calling bee with no task specified will list all available user-defined tasksets and tasks. This is exploited by the bash_completion script to provide TAB completion of taskset and task names (thanks to @neilang for this feature).
