@@ -7,15 +7,15 @@ It probably lacks several important features of whatever you're using now, but i
 
 ## INSTALL:
 
-1. From github
+ - From github
 
-    $ git clone git@github.com:jcartledge/bee.git
-    $ cd bee
+    $ git clone git@github.com:jcartledge/bee.git  
+    $ cd bee  
     $ ./bee
 
 (and follow the instructions to put bee on your path and setup bash completion.)
 
-2. Actually there is no other way yet.
+ - Actually there is no other way yet.
 
 ## USAGE:
 
@@ -60,7 +60,7 @@ This defines 4 tasks, 3 of them named:
     $ bee build:generate-css
 
 Dependencies are defined within the task method by calling $this->depends_on. This ensures each dependency is only run once.  
-This can be done anywhere in the task method but generally you'll want to ensure you're task dependencies have run before doing anything else.
+This can be done anywhere in the task method but generally you'll want to ensure your task dependencies have run before doing anything else.
 
 ## TASKSET LOADING
 
