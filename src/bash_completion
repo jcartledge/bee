@@ -1,2 +1,2 @@
 export COMP_WORDBREAKS=${COMP_WORDBREAKS/\:/}
-complete -o default -o nospace -W "`sh \`which bee\` | grep '^\w' | awk '{{print $1}}' | tr -s '[:space:]' ' '`" bee
+complete -o default -o nospace -W "`sh \`which bee\` 2>/dev/null | grep '^\w' | awk '{{print $1}}' | tr -s '[:space:]' ' '`" bee
