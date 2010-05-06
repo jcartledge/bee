@@ -5,19 +5,14 @@ I wrote it because we were using Ant in a PHP project and it just felt way too h
 
 It probably lacks several important features of whatever you're using now, but it works OK for us.
 
-That said, bee is very immature and will probably leave grubby handprints and texta drawings all over your clean white walls.
+That said, bee is very immature, does not do what it claims to, and may shatter.
 
 ## INSTALL:
 
  - From github
 
     $ git clone git@github.com:jcartledge/bee.git  
-    $ cd bee  
-    $ ./bee
-
-(and follow the instructions to put bee on your path and setup bash completion.)
-
- - Actually there is no other way yet.
+    $ ln -s /path/to/bee/src/bee /usr/local/bin/bee # probably needs sudo  
 
 ## USAGE:
 

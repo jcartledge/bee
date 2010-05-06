@@ -1,44 +1,5 @@
-#!/bin/bash
-#<?php echo chr(8); ob_start(); ?>
-
-# http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-in/179231#179231
-# removed $BASH_SOURCE for sh compatibility
-SCRIPT_PATH=$0
-if([ -h "${SCRIPT_PATH}" ]) then
-  while([ -h "${SCRIPT_PATH}" ]) do SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; done
-fi
-_DIR=`pwd`
-cd `dirname ${SCRIPT_PATH}` > /dev/null
-SCRIPT_PATH=`pwd`;
-cd $_DIR > /dev/null
-
-if ! which bee >/dev/null; then
-  #informative message about installing bee manually
-  popd > /dev/null
-  echo ""                                                                                    >&2
-  echo "***** BEE IS NOT INSTALLED *****"                                                    >&2
-  echo ""                                                                                    >&2
-  echo "To use bee from anywhere, create a symlink to bee in a directory on your path e.g.:" >&2
-  echo ""                                                                                    >&2
-  echo "  $ sudo ln -s ${SCRIPT_PATH}/bee /usr/bin/bee"                                      >&2
-  echo ""                                                                                    >&2
-  echo "You can enable bash completion by sourcing the completion script in your ~/.bashrc " >&2
-  echo "or similar e.g.:"                                                                    >&2
-  echo ""                                                                                    >&2
-  echo "  $ echo \". ${SCRIPT_PATH}/bash_completion\"  >> ~/.bashrc"                         >&2
-  echo ""                                                                                    >&2
-  echo "Press a key to continue"                                                             >&2
-  read -n1 -s
-fi;
-
-# include local config
-if [ -f `pwd`/.bee ]; then . `pwd`/.bee; fi
-
-# run php script
-php $SCRIPT_PATH/bee "$@"
-exit
-
-<?php ob_end_clean();
+#!/usr/bin/env php
+<?php 
 
 // micro task framework
 
