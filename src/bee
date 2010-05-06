@@ -102,7 +102,12 @@ abstract class Bee {
   private function _terminal_colour($text, $colour='NORMAL'){
     $colour = $this->TERM_COLOURS[strtoupper($colour)];
     if(!self::LOG_HIGHLIGHT || !$colour || isset($_SERVER['WINDIR'])) return $text;
-    return chr(27) . $colour . $text . chr(27) . chr(27) . '[0m' . chr(27) . ' ';
+    if(!empty($_ENV['DESKTOP_SESSION']) && $_ENV['DESKTOP_SESSION'] === 'gnome'){
+      return chr(27) . $colour . $text . chr(27) . '[0m';
+    }
+    else{
+      return chr(27) . $colour . $text . chr(27) . chr(27) . '[0m' . chr(27) . ' ';
+    }
   }
 
 }
@@ -248,7 +253,11 @@ class BeeConfig implements ArrayAccess, Countable {
   static $loading_instance;
 
   /** string implentation **/
-  function __toString($root = null) {
+  function __toString() {
+    return $this->___toString();
+  }
+
+  function ___toString($root = null) {
     ksort($this->_properties);
     foreach($this->_properties as $key => $val) {
       $out .= is_object($val) ? $val->__toString("{$root}{$key}.") : "{$root}{$key} = {$val}\r\n";
@@ -343,6 +352,6 @@ set_include_path(implode(PATH_SEPARATOR,
 
 $args = $argv;
 array_shift($args);
-if(!$args) $args = 'bee:list';
+if(!$args) $args = array('bee:list');
 $taskset = new BeeTaskSet;
 call_user_func_array(array($taskset, 'depends_on'), $args);
