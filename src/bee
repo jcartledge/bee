@@ -295,10 +295,14 @@ class BeeConfig implements ArrayAccess, Countable {
 }
 
 function _bee_task_paths() {
+  $local_paths = array();
+  if($local_env = realpath(getcwd() . DIRECTORY_SEPARATOR . '.bee')) {
+    $local_paths = array_map('realpath', array_map('trim', explode(PATH_SEPARATOR, include($local_env))));
+  }
   $env_paths = array_map('realpath', array_map('trim', explode(PATH_SEPARATOR, $_ENV['BEE_TASKPATH'])));
   $default_paths = array_map('realpath',
     array('.', './tasks', '~/.bee', '/etc/bee/tasks'));
-  return array_filter(array_merge($env_paths, $default_paths));
+  return array_filter(array_merge($local_paths, $env_paths, $default_paths));
 }
 
 ini_set('memory_limit', -1); //some PHPs don't like this
