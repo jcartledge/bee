@@ -12,7 +12,8 @@ That said, bee is very immature, does not do what it claims to, and may shatter.
  - From github
 
     $ git clone git@github.com:jcartledge/bee.git  
-    $ ln -s /path/to/bee/src/bee /usr/local/bin/bee # probably needs sudo  
+    $ cd bee
+    $ ./install.sh
 
 ## USAGE:
 
