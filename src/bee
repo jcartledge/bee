@@ -95,33 +95,76 @@ class BeeTaskSet extends Bee {
     if(is_null($cwd)) $cwd = $_SERVER['PWD'];
     if(is_null($start_time)) $start_time = mktime();
     if(is_null($this->config)) $this->config = new BeeConfig;
-    $dependencies = func_get_args();
-    if(count($dependencies) == 1) {
-      $dependencies = array_filter(array_map('trim', explode(' ', $dependencies[0])));
-    }
-    $dependencies = array_diff($dependencies, $satisfied);
-    if($current && $dependencies) {
-      $this->log("{$current} depends on " . implode(', ', $dependencies));
-    }
-    foreach($dependencies as $dependency) {
-      if(!in_array($dependency, $satisfied)) {
-        if($current) $stack[] = $current;
-        $current = $dependency;
-        $task = $this->_load_task($current);
-        $around_advice = array($task[0], 'around');
-        $prev_dir = getcwd();
-        $this->chdir($cwd);
-        if(is_callable($around_advice)) {
-          call_user_func($around_advice, $task[1]);
-        } else {
-          call_user_func($task);
-        }
-        $this->chdir($prev_dir);
-        $satisfied[] = $current;
-        $this->log("{$current} done in " . date("i:s", mktime() - $start_time));
-        if($stack) $current = array_pop($stack);
-      }
-    }
+    $bee_args = func_get_args();
+		$bee_args = explode(' ', implode(' ', $bee_args));
+		$bee_args = array_filter(array_map('trim', $bee_args));
+		$dependencies = array();
+
+		while($task_name = array_shift($bee_args)) {
+			$task = $this->_load_task($task_name);
+			$task_method = new ReflectionMethod(get_class($task[0]), $task[1]);
+			$task_params = $task_method->getParameters();
+			$task_args = array();
+			if($task_params) {
+				$task_required_params = $task_method->getNumberOfRequiredParameters();
+				foreach($task_params as $task_param) {
+					$task_param_names[] = $task_param->name;
+					$task_param_required[] = !$task_param->isOptional();
+				}
+				$params_done = FALSE;
+				while(!$params_done && $arg = array_shift($bee_args)) {
+					$is_named_arg = strpos($arg, '=');
+					if(!$is_named_arg && !$task_required_params) {
+						array_unshift($bee_args, $arg);
+						$params_done = TRUE;
+						continue;
+					} else if($is_named_arg) {
+						list($arg_name, $arg) = array_map('trim', explode('=', $arg));
+						$arg_index = array_search($arg_name, $task_param_names);
+						if($arg_index !== false) {
+							$task_args[$arg_index] = $arg;
+							$task_required_params -= $task_param_required[$arg_index];
+						}
+					} else {
+						for($arg_index = 0; $arg_index < count($task_params); $arg_index++) {
+							if(!isset($task_args[$arg_index])) {
+								$task_args[$arg_index] = $arg;
+								$task_required_params -= $task_param_required[$arg_index];
+								continue;
+							}
+						}
+					}
+				}
+				$dependency_key = $task_args ? sprintf('%s [ %s ]', $task_name, implode(' ', $task_args)) : $task_name;
+				$dependecies[$dependency_key] = array($task, $task_args);
+			}
+		}
+
+
+		$dependency_keys = array_keys($dependencies);
+		$unsatisfied_dependency_keys = array_diff($dependency_keys, $satisfied);
+		if($current && $unsatisfied_dependency_keys) {
+			$this->log("{$current} depends on " . implode(', ', array_keys($unsatisfied_dependency_keys)));
+		}
+
+		foreach($unsatisfied_dependency_keys as $dependency_key) {
+			$dependency = $dependencies[$dependency_key];
+			if($current) $stack[] = $current;
+			$current = $dependency;
+			$task = $this->_load_task($current);
+			$around_advice = array($task[0], 'around');
+			$prev_dir = getcwd();
+			$this->chdir($cwd);
+			if(is_callable($around_advice)) {
+				call_user_func($around_advice, $task[0][1], $task[1]);
+			} else {
+				call_user_func_array($task[0], $task[1]);
+			}
+			$this->chdir($prev_dir);
+			$satisfied[] = $current;
+			$this->log("{$current} done in " . date("i:s", mktime() - $start_time));
+			if($stack) $current = array_pop($stack);
+		}
   }
 
   /**
