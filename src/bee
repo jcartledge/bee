@@ -110,6 +110,7 @@ class BeeTaskSet extends Bee {
 				foreach($task_params as $task_param) {
 					$task_param_names[] = $task_param->name;
 					$task_param_required[] = !$task_param->isOptional();
+					$task_args[] = $task_param->isOptional() ? $task_param->getDefaultValue() : null; //ouch
 				}
 				$params_done = FALSE;
 				while(!$params_done && $arg = array_shift($bee_args)) {
@@ -130,7 +131,7 @@ class BeeTaskSet extends Bee {
 							if(!isset($task_args[$arg_index])) {
 								$task_args[$arg_index] = $arg;
 								$task_required_params -= $task_param_required[$arg_index];
-								continue;
+								continue(2);
 							}
 						}
 					}
@@ -150,8 +151,7 @@ class BeeTaskSet extends Bee {
 			$dependency = $dependencies[$dependency_key];
 			if($current) $stack[] = $current;
 			$current = $dependency_key;
-			$task = $this->_load_task($current);
-			$around_advice = array($task[0], 'around');
+			$around_advice = array($dependency[0][0], 'around');
 			$prev_dir = getcwd();
 			$this->chdir($cwd);
 			if(is_callable($around_advice)) {
