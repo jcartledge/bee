@@ -135,30 +135,29 @@ class BeeTaskSet extends Bee {
 						}
 					}
 				}
-				$dependency_key = $task_args ? sprintf('%s [ %s ]', $task_name, implode(' ', $task_args)) : $task_name;
-				$dependecies[$dependency_key] = array($task, $task_args);
 			}
+			$dependency_key = $task_args ? sprintf('%s [ %s ]', $task_name, implode(' ', $task_args)) : $task_name;
+			$dependencies[$dependency_key] = array($task, $task_args);
 		}
-
 
 		$dependency_keys = array_keys($dependencies);
 		$unsatisfied_dependency_keys = array_diff($dependency_keys, $satisfied);
 		if($current && $unsatisfied_dependency_keys) {
-			$this->log("{$current} depends on " . implode(', ', array_keys($unsatisfied_dependency_keys)));
+			$this->log("{$current} depends on " . implode(', ', $unsatisfied_dependency_keys));
 		}
 
 		foreach($unsatisfied_dependency_keys as $dependency_key) {
 			$dependency = $dependencies[$dependency_key];
 			if($current) $stack[] = $current;
-			$current = $dependency;
+			$current = $dependency_key;
 			$task = $this->_load_task($current);
 			$around_advice = array($task[0], 'around');
 			$prev_dir = getcwd();
 			$this->chdir($cwd);
 			if(is_callable($around_advice)) {
-				call_user_func($around_advice, $task[0][1], $task[1]);
+				call_user_func($around_advice, $dependency[0][1], $dependency[1]);
 			} else {
-				call_user_func_array($task[0], $task[1]);
+				call_user_func_array($dependency[0], $dependency[1]);
 			}
 			$this->chdir($prev_dir);
 			$satisfied[] = $current;
