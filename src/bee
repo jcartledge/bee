@@ -263,7 +263,7 @@ class BeeConfig implements ArrayAccess, Countable {
   function ___toString($root = null) {
     ksort($this->_properties);
     foreach($this->_properties as $key => $val) {
-      $out .= is_object($val) ? $val->__toString("{$root}{$key}.") : "{$root}{$key} = {$val}\r\n";
+      $out .= is_object($val) ? $val->___toString("{$root}{$key}.") : "{$root}{$key} = {$val}\r\n";
     }
     return (string)$out;
   }
