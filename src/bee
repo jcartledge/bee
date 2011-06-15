@@ -11,7 +11,7 @@ abstract class Bee {
 
   // These should be read from config/properties in the future
   const LOG_LEVEL      = 'NORMAL'; // <-- Set this to NONE or NORMAL
-  const LOG_COLOUR     = 'PURPLE'; // <-- Set this to any value in the array
+  const LOG_COLOUR     = 'YELLOW'; // <-- Set this to any value in the array
   const LOG_HIGHLIGHT = TRUE; // <-- No colour is applied if this is false
 
   protected $TERM_COLOURS = array(
