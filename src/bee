@@ -63,12 +63,7 @@ abstract class Bee {
   private function _terminal_colour($text, $colour='NORMAL'){
     $colour = $this->TERM_COLOURS[strtoupper($colour)];
     if(!self::LOG_HIGHLIGHT || !$colour || isset($_SERVER['WINDIR'])) return $text;
-    if(!empty($_ENV['DESKTOP_SESSION']) && $_ENV['DESKTOP_SESSION'] === 'gnome'){
-      return chr(27) . $colour . $text . chr(27) . '[0m';
-    }
-    else{
-      return chr(27) . $colour . $text . chr(27) . chr(27) . '[0m' . chr(27) . ' ';
-    }
+    return "\033{$colour}{$text}\033[0m";
   }
 
 }
