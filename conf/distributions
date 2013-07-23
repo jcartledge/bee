@@ -1,6 +1,6 @@
 Origin: James Cartledge
 Label: BEE!
 Codename: precise
-Architectures: amd64 i386
+Architectures: amd64 i386 source
 Components: main
 Description: Bee
