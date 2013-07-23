@@ -1,0 +1,17 @@
+Package: bee
+Version: 0.2.0
+License: unknown
+Vendor: e5020488@LCF201MAC-01.local
+Architecture: all
+Maintainer: <e5020488@LCF201MAC-01.local>
+Installed-Size: 12
+Homepage: http://example.com/no-uri-given
+Priority: extra
+Section: default
+Filename: pool/main/b/bee/bee_0.2.0_all.deb
+Size: 4944
+SHA256: 04ca2cd345b111865503e4babe746647805eeeac862ac79b100657962aadefad
+SHA1: 12b896692a087f265b37bb3baaee78e2fce7cf27
+MD5sum: 8f94525237f14de06168ed06310518c6
+Description: no description given
+
