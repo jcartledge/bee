@@ -1,7 +1,7 @@
 Origin: James Cartledge
 Label: BEE!
 Codename: precise
-Date: Tue, 23 Jul 2013 05:37:14 UTC
+Date: Tue, 23 Jul 2013 05:58:08 UTC
 Architectures: amd64 i386
 Components: main
 Description: Bee
@@ -12,6 +12,9 @@ MD5Sum:
  dd4170938c5dad00ba79dcb10c050cbf 486 main/binary-i386/Packages
  0e1e8ed3feed60ebf301fd10e17babd8 357 main/binary-i386/Packages.gz
  f351f890a7350d33d7ecce801e9abed6 88 main/binary-i386/Release
+ d41d8cd98f00b204e9800998ecf8427e 0 main/source/Sources
+ 7029066c27ac6f5ef18d660d5741979a 20 main/source/Sources.gz
+ e751ccf51d12309c682bed6288b2119d 90 main/source/Release
 SHA1:
  f9780a927da1594d0981379bbb65415677210efe 486 main/binary-amd64/Packages
  38c008f43c71f963ceea83559f241a9f906da89d 357 main/binary-amd64/Packages.gz
@@ -19,6 +22,9 @@ SHA1:
  f9780a927da1594d0981379bbb65415677210efe 486 main/binary-i386/Packages
  38c008f43c71f963ceea83559f241a9f906da89d 357 main/binary-i386/Packages.gz
  66d2c37e20ceeece690f1af1b4129f9fce8098a2 88 main/binary-i386/Release
+ da39a3ee5e6b4b0d3255bfef95601890afd80709 0 main/source/Sources
+ 46c6643f07aa7f6bfe7118de926b86defc5087c4 20 main/source/Sources.gz
+ c43fd85565bc10f72479bfc1a399c9dd19a9e891 90 main/source/Release
 SHA256:
  7fd8bba7d18474c65d61e04cfef346804d88ed3498983acf5f3904cad02adc2f 486 main/binary-amd64/Packages
  507b8bb8940952f9bd365e00ac3d7d2ebac0994cdc3e336d22f04f94971feb41 357 main/binary-amd64/Packages.gz
@@ -26,3 +32,6 @@ SHA256:
  7fd8bba7d18474c65d61e04cfef346804d88ed3498983acf5f3904cad02adc2f 486 main/binary-i386/Packages
  507b8bb8940952f9bd365e00ac3d7d2ebac0994cdc3e336d22f04f94971feb41 357 main/binary-i386/Packages.gz
  bdd23f54e466854a13bb24e31a7dcb1f1f65ac2714afc3c4121540b7abeb8e64 88 main/binary-i386/Release
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 0 main/source/Sources
+ 59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2 20 main/source/Sources.gz
+ 97348150a023cf184bf03b8898048ed5f6d4c6e845eddf2768683b28fb671a41 90 main/source/Release
